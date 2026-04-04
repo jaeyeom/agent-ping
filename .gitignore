@@ -1,0 +1,2 @@
+# Apps Script setup contains secret values when pulled via clasp
+appscript/Setup.gs

@@ -1,0 +1,108 @@
+package agentping_test
+
+import (
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	agentping "github.com/jaeyeom/agent-ping"
+)
+
+func TestSend(t *testing.T) {
+	var got agentping.Event
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			t.Errorf("method = %s, want POST", r.Method)
+		}
+		if ct := r.Header.Get("Content-Type"); ct != "application/json" {
+			t.Errorf("Content-Type = %s, want application/json", ct)
+		}
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
+		json.NewEncoder(w).Encode(agentping.Response{
+			OK:       true,
+			TaskID:   got.TaskID,
+			TaskKey:  got.Project + ":" + got.TaskID,
+			State:    string(got.State),
+			ThreadID: "thread-abc",
+		})
+	}))
+	defer server.Close()
+
+	client := agentping.NewClient(server.URL)
+	event := agentping.Event{
+		TaskID:  "task-1",
+		Project: "test-project",
+		State:   agentping.StateWaiting,
+		Source:  "test",
+		Title:   "Need approval",
+		Details: "Please review",
+	}
+
+	resp, err := client.Send(context.Background(), event)
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+
+	if got.TaskID != "task-1" {
+		t.Errorf("TaskID = %s, want task-1", got.TaskID)
+	}
+	if got.State != agentping.StateWaiting {
+		t.Errorf("State = %s, want waiting", got.State)
+	}
+	if got.Timestamp == "" {
+		t.Error("Timestamp should be auto-filled")
+	}
+	if resp.ThreadID != "thread-abc" {
+		t.Errorf("ThreadID = %s, want thread-abc", resp.ThreadID)
+	}
+}
+
+func TestSendWithSecret(t *testing.T) {
+	var gotAuth string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotAuth = r.Header.Get("Authorization")
+		json.NewEncoder(w).Encode(agentping.Response{OK: true, TaskID: "t1"})
+	}))
+	defer server.Close()
+
+	client := agentping.NewClient(server.URL)
+	client.Secret = "my-secret"
+
+	_, err := client.Send(context.Background(), agentping.Event{
+		TaskID:  "t1",
+		Project: "p",
+		State:   agentping.StateStart,
+		Source:  "test",
+		Title:   "test",
+	})
+	if err != nil {
+		t.Fatalf("Send: %v", err)
+	}
+	if gotAuth != "Bearer my-secret" {
+		t.Errorf("Authorization = %q, want %q", gotAuth, "Bearer my-secret")
+	}
+}
+
+func TestSendErrorResponse(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(agentping.Response{OK: false, Error: "Missing required field: state"})
+	}))
+	defer server.Close()
+
+	client := agentping.NewClient(server.URL)
+	_, err := client.Send(context.Background(), agentping.Event{
+		TaskID:  "t1",
+		Project: "p",
+		State:   "bad",
+		Source:  "test",
+		Title:   "test",
+	})
+	if err == nil {
+		t.Fatal("expected error for bad response")
+	}
+}

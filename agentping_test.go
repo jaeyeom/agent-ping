@@ -62,9 +62,11 @@ func TestSend(t *testing.T) {
 }
 
 func TestSendWithSecret(t *testing.T) {
-	var gotAuth string
+	var got agentping.Event
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gotAuth = r.Header.Get("Authorization")
+		if err := json.NewDecoder(r.Body).Decode(&got); err != nil {
+			t.Fatalf("decode request body: %v", err)
+		}
 		json.NewEncoder(w).Encode(agentping.Response{OK: true, TaskID: "t1"})
 	}))
 	defer server.Close()
@@ -82,8 +84,8 @@ func TestSendWithSecret(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Send: %v", err)
 	}
-	if gotAuth != "Bearer my-secret" {
-		t.Errorf("Authorization = %q, want %q", gotAuth, "Bearer my-secret")
+	if got.AuthToken != "my-secret" {
+		t.Errorf("auth_token = %q, want %q", got.AuthToken, "my-secret")
 	}
 }
 

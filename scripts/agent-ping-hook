@@ -14,7 +14,7 @@
 #   AGENT_PING_WEBHOOK_URL  — The Apps Script web app URL
 #
 # Optional environment variables:
-#   AGENT_PING_SECRET       — Shared secret for Authorization header
+#   AGENT_PING_SECRET       — Shared secret sent as auth_token in JSON body
 #   AGENT_PING_PROJECT      — Project name (default: basename of cwd)
 #   AGENT_PING_SOURCE       — Source identifier (default: claude-code)
 
@@ -73,26 +73,26 @@ case "$STATE" in
 esac
 
 # --- Send the event ---
-AUTH_HEADER=""
-if [[ -n "${AGENT_PING_SECRET:-}" ]]; then
-  AUTH_HEADER="Authorization: Bearer $AGENT_PING_SECRET"
-fi
-
 TIMESTAMP=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-PAYLOAD=$(jq -n \
-  --arg task_id "$SESSION_ID" \
-  --arg project "$PROJECT" \
-  --arg state "$STATE" \
-  --arg source "$SOURCE" \
-  --arg title "$TITLE" \
-  --arg timestamp "$TIMESTAMP" \
-  '{task_id: $task_id, project: $project, state: $state, source: $source, title: $title, timestamp: $timestamp}')
+JQ_ARGS=(
+  --arg task_id "$SESSION_ID"
+  --arg project "$PROJECT"
+  --arg state "$STATE"
+  --arg source "$SOURCE"
+  --arg title "$TITLE"
+  --arg timestamp "$TIMESTAMP"
+)
+JQ_EXPR='{task_id: $task_id, project: $project, state: $state, source: $source, title: $title, timestamp: $timestamp}'
+
+if [[ -n "${AGENT_PING_SECRET:-}" ]]; then
+  JQ_ARGS+=(--arg auth_token "$AGENT_PING_SECRET")
+  JQ_EXPR='{task_id: $task_id, project: $project, state: $state, source: $source, title: $title, timestamp: $timestamp, auth_token: $auth_token}'
+fi
+
+PAYLOAD=$(jq -n "${JQ_ARGS[@]}" "$JQ_EXPR")
 
 CURL_ARGS=(-s -L -H "Content-Type: application/json" -d "$PAYLOAD")
-if [[ -n "$AUTH_HEADER" ]]; then
-  CURL_ARGS+=(-H "$AUTH_HEADER")
-fi
 
 # Fire and forget — don't block Claude Code.
 curl "${CURL_ARGS[@]}" "$WEBHOOK_URL" > /dev/null 2>&1 &

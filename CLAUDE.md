@@ -22,7 +22,7 @@ The Go client does NOT talk to Gmail directly. It only sends JSON to the Apps Sc
 | Variable | Used by | Required | Purpose |
 |---|---|---|---|
 | `AGENT_PING_WEBHOOK_URL` | CLI, hook script | Yes | Apps Script web app URL |
-| `AGENT_PING_SECRET` | CLI, hook script | If `SHARED_SECRET` is set in Apps Script | Bearer token for auth |
+| `AGENT_PING_SECRET` | CLI, hook script | If `SHARED_SECRET` is set in Apps Script | Sent as `auth_token` in JSON body |
 | `AGENT_PING_PROJECT` | Hook script | No | Override project name (default: basename of cwd) |
 | `AGENT_PING_SOURCE` | Hook script | No | Override source identifier (default: `claude-code`) |
 

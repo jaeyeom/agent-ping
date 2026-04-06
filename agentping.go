@@ -32,6 +32,7 @@ type Event struct {
 	Title     string `json:"title"`
 	Details   string `json:"details,omitempty"`
 	Timestamp string `json:"timestamp"`
+	AuthToken string `json:"auth_token,omitempty"`
 }
 
 // Response is the JSON response from the AgentNotify Router.
@@ -48,7 +49,7 @@ type Response struct {
 // Client sends task events to an AgentNotify Router webhook.
 type Client struct {
 	WebhookURL string
-	Secret     string // optional shared secret for Authorization header
+	Secret     string // optional shared secret sent as auth_token in the JSON body
 	HTTPClient *http.Client
 }
 
@@ -65,6 +66,9 @@ func (c *Client) Send(ctx context.Context, event Event) (*Response, error) {
 	if event.Timestamp == "" {
 		event.Timestamp = time.Now().UTC().Format(time.RFC3339)
 	}
+	if c.Secret != "" {
+		event.AuthToken = c.Secret
+	}
 
 	body, err := json.Marshal(event)
 	if err != nil {
@@ -76,9 +80,6 @@ func (c *Client) Send(ctx context.Context, event Event) (*Response, error) {
 		return nil, fmt.Errorf("create request: %w", err)
 	}
 	req.Header.Set("Content-Type", "application/json")
-	if c.Secret != "" {
-		req.Header.Set("Authorization", "Bearer "+c.Secret)
-	}
 
 	httpClient := c.HTTPClient
 	if httpClient == nil {

@@ -277,10 +277,8 @@ function buildPlainBody_(payload) {
  * Build base64url-encoded raw RFC 2822 email for Gmail API.
  */
 function buildRawEmail_({ to, subject, body, inReplyTo, references }) {
-  const fromEmail = Session.getActiveUser().getEmail();
   const headers = [
     `To: ${to}`,
-    `From: ${CONFIG.FROM_NAME} <${fromEmail}>`,
     `Subject: ${subject}`,
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset=UTF-8',
@@ -321,31 +319,22 @@ function fetchRfcMessageId_(gmailMessageId) {
 }
 
 /**
- * Optional simple auth:
- * - Authorization: Bearer <secret>
- * or payload.auth_token
+ * Auth via JSON body field "auth_token".
+ *
+ * Note: Apps Script doPost(e) does not expose request headers, so
+ * Authorization: Bearer ... cannot be read here. Clients must send
+ * the secret as payload.auth_token instead.
  */
 function authorizeRequest_(e) {
   const secret = PropertiesService.getScriptProperties().getProperty('SHARED_SECRET');
   if (!secret) throw new Error('SHARED_SECRET not configured');
 
-  const headers = e && e.headers ? e.headers : {};
-  const authHeader =
-    headers.Authorization ||
-    headers.authorization ||
-    headers.AUTHORIZATION ||
-    null;
-
   let provided = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    provided = authHeader.slice('Bearer '.length).trim();
-  } else {
-    try {
-      const payload = parseJsonBody_(e);
-      provided = payload.auth_token || null;
-    } catch (_) {
-      provided = null;
-    }
+  try {
+    const payload = parseJsonBody_(e);
+    provided = payload.auth_token || null;
+  } catch (_) {
+    provided = null;
   }
 
   if (!provided || provided !== secret) {

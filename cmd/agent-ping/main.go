@@ -7,7 +7,7 @@
 // Environment variables:
 //
 //	AGENT_PING_WEBHOOK_URL  (required) The Apps Script web app URL.
-//	AGENT_PING_SECRET       (optional) Shared secret for Authorization header.
+//	AGENT_PING_SECRET       (optional) Shared secret sent as auth_token in JSON body.
 package main
 
 import (

@@ -60,9 +60,6 @@ if [[ -f "$STATE_FILE" ]]; then
   fi
 fi
 
-# Record new state.
-echo "$STATE" > "$STATE_FILE"
-
 # --- Build title based on state ---
 case "$STATE" in
   start)     TITLE="Agent working" ;;
@@ -92,9 +89,15 @@ fi
 
 PAYLOAD=$(jq -n "${JQ_ARGS[@]}" "$JQ_EXPR")
 
-CURL_ARGS=(-s -L -H "Content-Type: application/json" -d "$PAYLOAD")
+CURL_ARGS=(-s -L -o /dev/null -w "%{http_code}" -H "Content-Type: application/json" -d "$PAYLOAD")
 
-# Fire and forget — don't block Claude Code.
-curl "${CURL_ARGS[@]}" "$WEBHOOK_URL" > /dev/null 2>&1 &
+# Send synchronously so we can verify success before recording state.
+# Use a short timeout to avoid blocking Claude Code for too long.
+HTTP_CODE=$(curl --max-time 10 "${CURL_ARGS[@]}" "$WEBHOOK_URL" 2>/dev/null) || HTTP_CODE="000"
+
+# Record state only on success — allows retry on next identical event if this one failed.
+if [[ "$HTTP_CODE" == "200" ]]; then
+  echo "$STATE" > "$STATE_FILE"
+fi
 
 exit 0

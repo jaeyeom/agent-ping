@@ -106,19 +106,19 @@ Labels used by default:
 
 ### 1. Deploy the Apps Script router
 
-Use the files in [`appscript/Code.gs`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/appscript/Code.gs) and [`appscript/Setup.gs`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/appscript/Setup.gs).
+Use [`appscript/Code.gs`](appscript/Code.gs) and the template [`appscript/Setup.gs.example`](appscript/Setup.gs.example). Copy the template to `Setup.gs`, fill in your values, and run `setupProperties()` once from the Apps Script editor.
 
 Required script properties:
 
-- `TARGET_EMAIL`
-- `SHARED_SECRET` (optional but recommended)
+- `TARGET_EMAIL` — your Gmail address
+- `SHARED_SECRET` — shared secret for authenticating webhook requests (must match `AGENT_PING_SECRET` on the client side)
 
 Then deploy the project as a web app and copy the deployment URL.
 
 More detail:
 
-- [`docs/DESIGN-APPS-SCRIPT.md`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/docs/DESIGN-APPS-SCRIPT.md)
-- [`docs/DESIGN.md`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/docs/DESIGN.md)
+- [`docs/DESIGN-APPS-SCRIPT.md`](docs/DESIGN-APPS-SCRIPT.md)
+- [`docs/DESIGN.md`](docs/DESIGN.md)
 
 ### 2. Build the CLI
 
@@ -149,7 +149,7 @@ If the router is configured correctly, you should see a Gmail thread appear in y
 
 ## Claude Code Hook Integration
 
-[`scripts/agent-ping-hook`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/scripts/agent-ping-hook) maps Claude Code session events to `agent-ping` states and deduplicates repeated transitions per session.
+[`scripts/agent-ping-hook`](scripts/agent-ping-hook) maps Claude Code session events to `agent-ping` states and deduplicates repeated transitions per session.
 
 The practical effect:
 
@@ -160,7 +160,7 @@ The practical effect:
 
 Setup guide:
 
-- [`docs/SETUP-CLAUDE-CODE-HOOKS.md`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/docs/SETUP-CLAUDE-CODE-HOOKS.md)
+- [`docs/SETUP-CLAUDE-CODE-HOOKS.md`](docs/SETUP-CLAUDE-CODE-HOOKS.md)
 
 ## Go Library Usage
 
@@ -185,10 +185,10 @@ fmt.Println(resp.ThreadID)
 
 ## Repository Layout
 
-- [`agentping.go`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/agentping.go): Go client and event types
-- [`cmd/agent-ping/main.go`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/cmd/agent-ping/main.go): CLI entrypoint
-- [`appscript/Code.gs`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/appscript/Code.gs): Gmail router implementation
-- [`scripts/agent-ping-hook`](/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping/scripts/agent-ping-hook): Claude Code hook wrapper
+- [`agentping.go`](agentping.go): Go client and event types
+- [`cmd/agent-ping/main.go`](cmd/agent-ping/main.go): CLI entrypoint
+- [`appscript/Code.gs`](appscript/Code.gs): Gmail router implementation
+- [`scripts/agent-ping-hook`](scripts/agent-ping-hook): Claude Code hook wrapper
 
 ## Development
 

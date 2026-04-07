@@ -1,0 +1,20 @@
+/**
+ * Setup script for AgentNotify Router.
+ *
+ * Copy this file to Setup.gs in your Apps Script project, then fill in your
+ * values and run setupProperties() once from the Apps Script editor.
+ *
+ * This file is a template — the real Setup.gs is gitignored because it
+ * contains secret values.
+ */
+
+function setupProperties() {
+  const props = PropertiesService.getScriptProperties();
+
+  // Your Gmail address — where notification threads will be created.
+  props.setProperty('TARGET_EMAIL', 'you@gmail.com');
+
+  // Shared secret for authenticating webhook requests.
+  // Must match the AGENT_PING_SECRET environment variable on the client side.
+  props.setProperty('SHARED_SECRET', 'replace-with-a-strong-random-secret');
+}

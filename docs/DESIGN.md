@@ -476,7 +476,7 @@ Inbox always represents **current outstanding work**.
 Same as before, with one critical addition: API access.
 
 - Webhook is a Script Web App URL; protect it via:
-  - Shared secret token in header or payload.
+  - Shared secret token in JSON body (`auth_token` field). Apps Script cannot read request headers.
   - Optionally IP allowlisting upstream (if using a proxy).
 - Gmail API usage is internal (Apps Script has direct access to your Gmail).
 - No external recipients; all mail goes to your Gmail.

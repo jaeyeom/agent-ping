@@ -18,7 +18,7 @@ The key implementation points are:
  * 2. Deploy as Web App.
  * 3. Set script properties:
  *    - TARGET_EMAIL = your Gmail address
- *    - SHARED_SECRET = optional bearer token / webhook secret
+ *    - SHARED_SECRET = optional shared secret for body-based auth
  *
  * Notes:
  * - This skeleton is intentionally explicit and conservative.
@@ -332,31 +332,22 @@ function fetchRfcMessageId_(gmailMessageId) {
 }
 
 /**
- * Optional simple auth:
- * - Authorization: Bearer <secret>
- * or payload.auth_token
+ * Auth via JSON body field "auth_token".
+ *
+ * Note: Apps Script doPost(e) does not expose request headers, so
+ * Authorization: Bearer ... cannot be read here. Clients must send
+ * the secret as payload.auth_token instead.
  */
 function authorizeRequest_(e) {
   const secret = PropertiesService.getScriptProperties().getProperty('SHARED_SECRET');
-  if (!secret) return;
-
-  const headers = e && e.headers ? e.headers : {};
-  const authHeader =
-    headers.Authorization ||
-    headers.authorization ||
-    headers.AUTHORIZATION ||
-    null;
+  if (!secret) throw new Error('SHARED_SECRET not configured');
 
   let provided = null;
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    provided = authHeader.slice('Bearer '.length).trim();
-  } else {
-    try {
-      const payload = parseJsonBody_(e);
-      provided = payload.auth_token || null;
-    } catch (_) {
-      provided = null;
-    }
+  try {
+    const payload = parseJsonBody_(e);
+    provided = payload.auth_token || null;
+  } catch (_) {
+    provided = null;
   }
 
   if (!provided || provided !== secret) {
@@ -423,7 +414,11 @@ function getRequiredScriptProperty_(key) {
   return value;
 }
 
-function jsonResponse(obj, statusCode) {
+/**
+ * Apps Script web apps always return HTTP 200. Callers must check the "ok"
+ * field in the JSON body to distinguish success from failure.
+ */
+function jsonResponse(obj) {
   const out = ContentService.createTextOutput(JSON.stringify(obj, null, 2));
   out.setMimeType(ContentService.MimeType.JSON);
   return out;

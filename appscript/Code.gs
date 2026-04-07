@@ -7,7 +7,7 @@
  * 2. Deploy as Web App.
  * 3. Set script properties:
  *    - TARGET_EMAIL = your Gmail address
- *    - SHARED_SECRET = optional bearer token / webhook secret
+ *    - SHARED_SECRET = optional shared secret for body-based auth
  *
  * Notes:
  * - This skeleton is intentionally explicit and conservative.
@@ -95,14 +95,11 @@ function doPost(e) {
       subject: meta.canonicalSubject,
     });
   } catch (err) {
-    return jsonResponse(
-      {
-        ok: false,
-        error: String(err && err.message ? err.message : err),
-        stack: err && err.stack ? err.stack : null,
-      },
-      400
-    );
+    return jsonResponse({
+      ok: false,
+      error: String(err && err.message ? err.message : err),
+      stack: err && err.stack ? err.stack : null,
+    });
   }
 }
 
@@ -401,7 +398,11 @@ function getRequiredScriptProperty_(key) {
   return value;
 }
 
-function jsonResponse(obj, statusCode) {
+/**
+ * Apps Script web apps always return HTTP 200. Callers must check the "ok"
+ * field in the JSON body to distinguish success from failure.
+ */
+function jsonResponse(obj) {
   const out = ContentService.createTextOutput(JSON.stringify(obj, null, 2));
   out.setMimeType(ContentService.MimeType.JSON);
   return out;

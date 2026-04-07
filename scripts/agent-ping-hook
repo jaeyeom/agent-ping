@@ -26,7 +26,15 @@ if [[ -z "$STATE" ]]; then
   exit 1
 fi
 
-# Read hook JSON from stdin.
+# Early exit if not configured — before reading stdin or requiring jq.
+# This ensures teammates without the webhook (or without jq) get a silent no-op.
+WEBHOOK_URL="${AGENT_PING_WEBHOOK_URL:-}"
+if [[ -z "$WEBHOOK_URL" ]]; then
+  cat > /dev/null  # drain stdin to avoid broken-pipe errors
+  exit 0
+fi
+
+# Read hook JSON from stdin (requires jq).
 INPUT=$(cat)
 
 SESSION_ID=$(echo "$INPUT" | jq -r '.session_id // empty')
@@ -35,12 +43,6 @@ CWD=$(echo "$INPUT" | jq -r '.cwd // empty')
 if [[ -z "$SESSION_ID" ]]; then
   echo "error: no session_id in hook input" >&2
   exit 1
-fi
-
-WEBHOOK_URL="${AGENT_PING_WEBHOOK_URL:-}"
-if [[ -z "$WEBHOOK_URL" ]]; then
-  # Silent exit if not configured — don't break the session.
-  exit 0
 fi
 
 # Derive project name from cwd if not set.

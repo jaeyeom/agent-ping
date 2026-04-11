@@ -8,6 +8,8 @@ Turn Gmail into a self-dismissing notification center for long-running agent wor
 - Every task keeps its full history in one Gmail conversation.
 - Resumed or finished work disappears from the inbox without deleting history.
 
+![Architecture overview](docs/architecture.jpg)
+
 ## Why this is interesting
 
 Most notification systems are noisy because they treat every update as a new alert. This project does the opposite.

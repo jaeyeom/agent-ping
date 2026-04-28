@@ -80,11 +80,16 @@ Every event uses the same payload shape:
   "source": "claude-code",
   "title": "Waiting for approval",
   "details": "Optional longer text",
+  "hostname": "macbook-pro",
+  "os": "Darwin",
+  "cwd": "/Users/jaehyun/go/src/github.com/jaeyeom/agent-ping",
+  "session_short_id": "abc12345",
   "timestamp": "2026-04-06T07:00:00Z"
 }
 ```
 
 `task_id` is the key design choice. It is the stable identity that maps one logical task to one Gmail thread.
+For session-oriented producers like the Claude Code hook, optional context fields such as `hostname`, `cwd`, and `session_short_id` make concurrent sessions distinguishable without changing the underlying task identity.
 
 ## How Gmail behaves
 
@@ -159,6 +164,8 @@ The practical effect:
 - agent stops for user input -> thread moves into inbox
 - user replies and work resumes -> same thread is archived again
 - session ends -> final completion message stays archived
+
+The hook also sends machine and checkout context so subjects and bodies can distinguish multiple Claude Code sessions for the same repo. If `AGENT_PING_INCLUDE_PROMPT=1`, it adds a prompt preview to `details`.
 
 Setup guide:
 

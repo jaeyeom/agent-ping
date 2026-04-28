@@ -25,14 +25,18 @@ const (
 
 // Event is the JSON payload sent to the AgentNotify Router.
 type Event struct {
-	TaskID    string `json:"task_id"`
-	Project   string `json:"project"`
-	State     State  `json:"state"`
-	Source    string `json:"source"`
-	Title     string `json:"title"`
-	Details   string `json:"details,omitempty"`
-	Timestamp string `json:"timestamp"`
-	AuthToken string `json:"auth_token,omitempty"`
+	TaskID         string `json:"task_id"`
+	Project        string `json:"project"`
+	State          State  `json:"state"`
+	Source         string `json:"source"`
+	Title          string `json:"title"`
+	Details        string `json:"details,omitempty"`
+	Hostname       string `json:"hostname,omitempty"`
+	OS             string `json:"os,omitempty"`
+	CWD            string `json:"cwd,omitempty"`
+	SessionShortID string `json:"session_short_id,omitempty"`
+	Timestamp      string `json:"timestamp"`
+	AuthToken      string `json:"auth_token,omitempty"`
 }
 
 // Response is the JSON response from the AgentNotify Router.

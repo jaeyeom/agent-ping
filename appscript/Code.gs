@@ -246,18 +246,36 @@ function validatePayload_(payload) {
  * Recommended: keep state in body, not in the subject.
  */
 function buildCanonicalSubject_(payload) {
-  return `[${payload.project}][${payload.source}][task:${payload.task_id}] ${payload.title}`;
+  const sourceLabel = payload.hostname
+    ? `${payload.source}@${payload.hostname}`
+    : payload.source;
+  const sessionLabel = payload.session_short_id || payload.task_id;
+  return `[${payload.project}][${sourceLabel}][task:${sessionLabel}] ${payload.title}`;
 }
 
 /**
  * Include state in the body so the thread stays stable even as state changes.
  */
 function buildPlainBody_(payload) {
-  return [
+  const lines = [
     `Project: ${payload.project}`,
+    `Session: ${payload.session_short_id || payload.task_id}`,
     `Task ID: ${payload.task_id}`,
     `Source: ${payload.source}`,
     `State: ${payload.state}`,
+  ];
+
+  if (payload.hostname) {
+    lines.push(`Hostname: ${payload.hostname}`);
+  }
+  if (payload.os) {
+    lines.push(`OS: ${payload.os}`);
+  }
+  if (payload.cwd) {
+    lines.push(`Working Directory: ${payload.cwd}`);
+  }
+
+  lines.push(
     `Timestamp: ${payload.timestamp}`,
     '',
     payload.title,
@@ -266,8 +284,10 @@ function buildPlainBody_(payload) {
     payload.details || '(no additional details)',
     '---',
     '',
-    `Task ID: ${payload.task_id}`,
-  ].join('\n');
+    `Task ID: ${payload.task_id}`
+  );
+
+  return lines.join('\n');
 }
 
 /**

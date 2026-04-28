@@ -17,6 +17,9 @@
 #   AGENT_PING_SECRET       — Shared secret sent as auth_token in JSON body
 #   AGENT_PING_PROJECT      — Project name (default: basename of cwd)
 #   AGENT_PING_SOURCE       — Source identifier (default: claude-code)
+#   AGENT_PING_HOSTNAME     — Hostname override (default: system short hostname)
+#   AGENT_PING_OS           — OS label override (default: uname -s)
+#   AGENT_PING_INCLUDE_PROMPT — Set to 1/true/yes to include prompt previews
 
 set -euo pipefail
 
@@ -48,6 +51,27 @@ fi
 # Derive project name from cwd if not set.
 PROJECT="${AGENT_PING_PROJECT:-$(basename "${CWD:-$(pwd)}")}"
 SOURCE="${AGENT_PING_SOURCE:-claude-code}"
+HOSTNAME_VALUE="${AGENT_PING_HOSTNAME:-$(hostname -s 2>/dev/null || hostname 2>/dev/null || echo unknown-host)}"
+OS_VALUE="${AGENT_PING_OS:-$(uname -s 2>/dev/null || echo unknown-os)}"
+SESSION_SHORT_ID="${SESSION_ID:0:8}"
+DETAILS=""
+
+INCLUDE_PROMPT="${AGENT_PING_INCLUDE_PROMPT:-}"
+if [[ "$INCLUDE_PROMPT" =~ ^(1|true|TRUE|yes|YES|on|ON)$ ]]; then
+  PROMPT=$(echo "$INPUT" | jq -r '
+    first([
+      .prompt?,
+      .user_prompt?,
+      .message?,
+      .tool_input?.prompt?,
+      .input?.prompt?,
+      .hook_input?.prompt?
+    ][] | select(type == "string" and length > 0)) // empty
+  ')
+  if [[ -n "$PROMPT" ]]; then
+    DETAILS="Last prompt: $PROMPT"
+  fi
+fi
 
 # --- Dedup: skip if last state for this session matches ---
 STATE_DIR="${TMPDIR:-/tmp}/agent-ping-state"
@@ -80,13 +104,45 @@ JQ_ARGS=(
   --arg state "$STATE"
   --arg source "$SOURCE"
   --arg title "$TITLE"
+  --arg hostname "$HOSTNAME_VALUE"
+  --arg os "$OS_VALUE"
+  --arg cwd "${CWD:-$(pwd)}"
+  --arg session_short_id "$SESSION_SHORT_ID"
   --arg timestamp "$TIMESTAMP"
 )
-JQ_EXPR='{task_id: $task_id, project: $project, state: $state, source: $source, title: $title, timestamp: $timestamp}'
+JQ_EXPR='{
+  task_id: $task_id,
+  project: $project,
+  state: $state,
+  source: $source,
+  title: $title,
+  hostname: $hostname,
+  os: $os,
+  cwd: $cwd,
+  session_short_id: $session_short_id,
+  timestamp: $timestamp
+}'
+
+if [[ -n "$DETAILS" ]]; then
+  JQ_ARGS+=(--arg details "$DETAILS")
+  JQ_EXPR='{
+    task_id: $task_id,
+    project: $project,
+    state: $state,
+    source: $source,
+    title: $title,
+    hostname: $hostname,
+    os: $os,
+    cwd: $cwd,
+    session_short_id: $session_short_id,
+    timestamp: $timestamp,
+    details: $details
+  }'
+fi
 
 if [[ -n "${AGENT_PING_SECRET:-}" ]]; then
   JQ_ARGS+=(--arg auth_token "$AGENT_PING_SECRET")
-  JQ_EXPR='{task_id: $task_id, project: $project, state: $state, source: $source, title: $title, timestamp: $timestamp, auth_token: $auth_token}'
+  JQ_EXPR="$JQ_EXPR | .auth_token = \$auth_token"
 fi
 
 PAYLOAD=$(jq -n "${JQ_ARGS[@]}" "$JQ_EXPR")

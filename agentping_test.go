@@ -34,12 +34,16 @@ func TestSend(t *testing.T) {
 
 	client := agentping.NewClient(server.URL)
 	event := agentping.Event{
-		TaskID:  "task-1",
-		Project: "test-project",
-		State:   agentping.StateWaiting,
-		Source:  "test",
-		Title:   "Need approval",
-		Details: "Please review",
+		TaskID:         "task-1",
+		Project:        "test-project",
+		State:          agentping.StateWaiting,
+		Source:         "test",
+		Title:          "Need approval",
+		Details:        "Please review",
+		Hostname:       "devbox",
+		OS:             "Darwin",
+		CWD:            "/tmp/test-project",
+		SessionShortID: "task-1",
 	}
 
 	resp, err := client.Send(context.Background(), event)
@@ -52,6 +56,15 @@ func TestSend(t *testing.T) {
 	}
 	if got.State != agentping.StateWaiting {
 		t.Errorf("State = %s, want waiting", got.State)
+	}
+	if got.Hostname != "devbox" {
+		t.Errorf("Hostname = %s, want devbox", got.Hostname)
+	}
+	if got.CWD != "/tmp/test-project" {
+		t.Errorf("CWD = %s, want /tmp/test-project", got.CWD)
+	}
+	if got.SessionShortID != "task-1" {
+		t.Errorf("SessionShortID = %s, want task-1", got.SessionShortID)
 	}
 	if got.Timestamp == "" {
 		t.Error("Timestamp should be auto-filled")

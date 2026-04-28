@@ -100,6 +100,10 @@ Four core states, from the router’s point of view:
   "source": "agent-or-service-name",
   "title": "Short human-readable description",
   "details": "Optional longer text (logs, prompts, errors)",
+  "hostname": "macbook-pro",
+  "os": "Darwin",
+  "cwd": "/Users/example/src/project",
+  "session_short_id": "abc12345",
   "timestamp": "2026-03-31T20:53:00Z"
 }
 ```
@@ -112,6 +116,10 @@ Four core states, from the router’s point of view:
 - `source`: Agent/service identifier (`claude-code`, `perplexity-computer`, `ci-pipeline`, etc.).
 - `title`: Human‑readable summary, appears in subject.
 - `details`: Arbitrary text: prompt, logs, error details, links.
+- `hostname`: Optional host or machine label to distinguish concurrent sessions.
+- `os`: Optional operating system label.
+- `cwd`: Optional full checkout or working directory path.
+- `session_short_id`: Optional short human-friendly session identifier for display.
 - `timestamp`: ISO8601 UTC; used for debugging and human context.
 
 ***
@@ -159,13 +167,13 @@ This requires a small piece of persistent state keyed by `task_id` → `threadId
 Canonical subject format (stable across the task lifetime):
 
 ```text
-[project][source][task:TASK_ID] TITLE
+[project][source@hostname][task:SESSION_SHORT_ID] TITLE
 ```
 
 Example:
 
 ```text
-[backend-service][claude-code][task:db-migration-123] Approve production schema change
+[backend-service][claude-code@macbook-pro][task:abc12345] Approve production schema change
 ```
 
 Notes:
@@ -179,9 +187,13 @@ Body template (plain text is fine):
 
 ```text
 Project: {project}
+Session: {session_short_id or task_id}
 Task ID: {task_id}
 Source: {source}
 State: {state}
+Hostname: {hostname}
+OS: {os}
+Working Directory: {cwd}
 Timestamp: {timestamp}
 
 {title}
@@ -194,6 +206,8 @@ Task ID: {task_id}
 ```
 
 We don’t need to manually manage `In-Reply-To`/`References` headers in Apps Script if we use the Gmail API’s `threadId` parameter correctly, but the body repeats key info for search and resilience. [github](https://github.com/n8n-io/n8n/issues/15775)
+
+For privacy-sensitive environments, prompt text should remain optional and flow through `details` only when explicitly enabled by the producer.
 
 ***
 
